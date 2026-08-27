@@ -1,0 +1,20 @@
+name: Build APK
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          rm -rf app/src/main/java app/src/main/res app/src/main/AndroidManifest.xml
+          unzip -o BarnhillCalendar_Fixed.zip -d /tmp/b
+          cp -rv $(find /tmp/b -name AndroidManifest.xml -exec dirname {} \; | head -n1)/* app/src/main/
+      - uses: actions/setup-java@v4
+        with: { distribution: 'temurin', java-version: '17' }
+      - run: |
+          chmod +x gradlew
+         ./gradlew assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: APK
+          path: app/build/outputs/apk/debug/*.apk
