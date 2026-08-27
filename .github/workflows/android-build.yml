@@ -1,30 +1,40 @@
 name: Build APK
-on:
-  push:
-    branches:
-      - main
-      - master
-  workflow_dispatch:
+on: workflow_dispatch
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      
+      - name: AUTO-EXTRACT Barnhill zip if present
+        run: |
+          if [ -f BarnhillCalendar_Fixed.zip ]; then
+            echo "Found BarnhillCalendar_Fixed.zip - auto extracting..."
+            rm -rf app/src/main/java app/src/main/res app/src/main/AndroidManifest.xml
+            unzip -o BarnhillCalendar_Fixed.zip -d /tmp/barnhill
+            find /tmp/barnhill -type f | head -n 100
+            MAIN_PATH=$(find /tmp/barnhill -type f -name "AndroidManifest.xml" -exec dirname {} \; | head -n 1)
+            echo "Manifest found at $MAIN_PATH"
+            cp -rv $MAIN_PATH/* app/src/main/
+            ls -R app/src/main/
+          else
+            echo "No zip found, using existing app/src/main"
+            ls -R app/src/main/
+          fi
+
+      - uses: actions/setup-java@v4
         with:
-          java-version: '17'
           distribution: 'temurin'
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-      - name: Setup Gradle 8.7
-        uses: gradle/actions/setup-gradle@v3
+          java-version: '17'
+      - uses: gradle/gradle-build-action@v3
         with:
           gradle-version: 8.7
-      - name: Build debug APK
-        run: gradle assembleDebug --warning-mode all
+      - name: Build Debug APK
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: BarnhillCalendar-APK
+          path: app/build/outputs/apk/debug/*.apk
