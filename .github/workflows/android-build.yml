@@ -5,23 +5,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: AUTO-EXTRACT Barnhill zip if present
+      - name: AUTO-EXTRACT zip
         run: |
           if [ -f BarnhillCalendar_Fixed.zip ]; then
-            echo "Found BarnhillCalendar_Fixed.zip - auto extracting..."
             rm -rf app/src/main/java app/src/main/res app/src/main/AndroidManifest.xml
             unzip -o BarnhillCalendar_Fixed.zip -d /tmp/barnhill
-            find /tmp/barnhill -type f | head -n 100
-            MAIN_PATH=$(find /tmp/barnhill -type f -name "AndroidManifest.xml" -exec dirname {} \; | head -n 1)
-            echo "Manifest found at $MAIN_PATH"
+            MAIN_PATH=$(find /tmp/barnhill -name "AndroidManifest.xml" -exec dirname {} \; | head -n 1)
             cp -rv $MAIN_PATH/* app/src/main/
-            ls -R app/src/main/
-          else
-            echo "No zip found, using existing app/src/main"
-            ls -R app/src/main/
           fi
-
+          ls -R app/src/main/
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -29,10 +21,10 @@ jobs:
       - uses: gradle/gradle-build-action@v3
         with:
           gradle-version: 8.7
-      - name: Build Debug APK
+      - name: Build APK
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleDebug
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
